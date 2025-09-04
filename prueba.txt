@@ -1,0 +1,3 @@
+create paper1
+5 + 10
+if a == b then
