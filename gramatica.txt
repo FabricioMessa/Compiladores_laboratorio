@@ -1,4 +1,7 @@
-S' -> S
-S -> C C
-C -> c C
-C -> d
+E' -> E
+E -> E + T
+E -> T
+T -> T * F
+T -> F
+F -> ( E )
+F -> id
