@@ -11,7 +11,7 @@ using namespace std;
 
 struct produccion {
     string left;
-    vector<string> right;
+    vector<string> right; 
 };
 
 struct Item {
@@ -84,7 +84,9 @@ set<string> first_sequence(const vector<string>& seq, const vector<produccion>& 
     for (const auto& sym : seq) {
         set<string> f = first(sym, producciones, noTerminales, memo);
         for (const auto& s : f)
-            if (s != "ε") result.insert(s);
+            if (s != "ε") {
+                result.insert(s);
+            }
         if (f.find("ε") == f.end()) {
             allNullable = false;
             break;
@@ -133,11 +135,16 @@ set<Item> closure(const set<Item>& I, const vector<produccion>& producciones, co
 }
 
 set<Item> goto_fn(const set<Item>& I, const string& X, const vector<produccion>& producciones, const set<string>& noTerminales, map<string, set<string>>& memo) {
-    if (X == "ε") return {}; // Nunca construir GOTO para epsilon
+    if (X == "ε") {
+        return {};
+    }
+
     set<Item> J;
     for (const auto& item : I) {
         const produccion& prod = producciones[item.idx];
-        if (prod.right.empty()) continue; // Evita acceso a prod.right si está vacío
+        if (prod.right.empty()) { 
+            continue;
+        }
         if (item.dot_pos < prod.right.size() && prod.right[item.dot_pos] == X) {
             Item moved_item{item.idx, item.dot_pos + 1, item.lookahead};
             J.insert(moved_item);
@@ -162,6 +169,7 @@ int main() {
         }
 
         size_t flecha = line.find("->");
+
         if (flecha == string::npos) {
             cerr << "Error: la linea no contiene '->': " << line << endl;
             continue;
@@ -176,36 +184,34 @@ int main() {
         vector<string> right;
         stringstream ss(right_side);
         string simbolo;
+
         while (ss >> simbolo) {
             right.push_back(simbolo);
         }
-        // Si la producción es ε, el vector right queda vacío
-        if (right.size() == 1 && right[0] == "ε") right.clear();
+
+        if (right.size() == 1 && right[0] == "ε") {
+            right.clear();
+        }
 
         producciones.push_back({left, right});
     }
 
-    // Construcción de no terminales
     set<string> noTerminales;
     for (const auto& prod : producciones) {
         noTerminales.insert(prod.left);
     }
 
-    // Construcción automática de terminales y no terminales
     set<string> all_symbols;
     for (const auto& prod : producciones) {
         for (const auto& sym : prod.right)
             all_symbols.insert(sym);
     }
 
-    // Elimina ε de los terminales si existe
     all_symbols.erase("ε");
 
-    // Orden de columnas como la imagen deseada
-    vector<string> term_order = {"c", "d", "$", "(", ")", "a", "b", "id"}; // puedes agregar más si tu gramática cambia
-    vector<string> goto_order = {"S'", "S", "C", "E", "T", "F"}; // puedes agregar más si tu gramática cambia
+    vector<string> term_order = {"c", "d", "$", "(", ")", "a", "b", "id"}; 
+    vector<string> goto_order = {"S'", "S", "C", "E", "T", "F"};
 
-    // Terminales en el orden deseado (y se agregan los adicionales)
     vector<string> terminales;
     for (const auto& t : term_order) {
         if (all_symbols.find(t) != all_symbols.end() || t == "$")
@@ -218,7 +224,6 @@ int main() {
     if (find(terminales.begin(), terminales.end(), "$") == terminales.end())
         terminales.push_back("$");
 
-    // No terminales en el orden deseado (y se agregan los adicionales)
     vector<string> no_terminales;
     for (const auto& nt : goto_order) {
         if (noTerminales.find(nt) != noTerminales.end())
@@ -229,7 +234,6 @@ int main() {
             no_terminales.push_back(nt);
     }
 
-    // Mostrar producciones
     for (int i = 0; i < producciones.size(); ++i) {
         cout << i << ": " << producciones[i].left << " -> ";
         if (producciones[i].right.empty()) {
@@ -242,14 +246,10 @@ int main() {
         cout << endl;
     }
 
-    // --- INICIO BLOQUE PARA TABLA LR(1) ---
-    // Estado LR(1) = conjunto de items
     vector<set<Item>> estados;
     map<set<Item>, int> estado_id;
     map<int, map<string, string>> action;
     map<int, map<string, int>> goto_table;
-
-    // Item inicial
     map<string, set<string>> memo;
     set<Item> I0;
     I0.insert({0, 0, "$"});
@@ -257,7 +257,6 @@ int main() {
     estados.push_back(closure0);
     estado_id[closure0] = 0;
 
-    // Fuerza el orden de creación de los primeros estados GOTO desde el estado 0
     for (const auto& X : goto_order) {
         set<Item> goto0 = goto_fn(closure0, X, producciones, noTerminales, memo);
         if (!goto0.empty() && !estado_id.count(goto0)) {
@@ -267,16 +266,14 @@ int main() {
         }
     }
 
-    // Ahora sigue el ciclo BFS habitual para crear los demás estados
     for (size_t idx = 0; idx < estados.size(); ++idx) {
         set<Item> I = estados[idx];
-        // Para todos los símbolos posibles
         set<string> simbolos;
         for (const auto& prod : producciones) {
             for (const auto& s : prod.right) simbolos.insert(s);
         }
-        simbolos.insert("$"); // Asegura el terminal $
-        simbolos.erase("ε");  // Elimina ε para evitar segmentation fault
+        simbolos.insert("$"); 
+        simbolos.erase("ε"); 
         for (const auto& X : simbolos) {
             set<Item> goto_I_X = goto_fn(I, X, producciones, noTerminales, memo);
             if (!goto_I_X.empty()) {
@@ -293,10 +290,10 @@ int main() {
                 }
             }
         }
-        // Reductions and Accept
+
         for (const auto& it : I) {
             const produccion& prod = producciones[it.idx];
-            if (it.dot_pos == prod.right.size()) { // Punto al final
+            if (it.dot_pos == prod.right.size()) { 
                 if (prod.left == "S'" && it.lookahead == "$") {
                     action[idx]["$"] = "acc";
                 } else {
@@ -306,7 +303,6 @@ int main() {
         }
     }
 
-    // --- Impresión de la tabla ---
     cout << "\nLR(1) PARSING TABLE:\n";
     cout << "State\t";
     for (const auto& t : terminales) cout << t << "\t";
@@ -314,7 +310,7 @@ int main() {
         if (find(no_terminales.begin(), no_terminales.end(), nt) != no_terminales.end())
             cout << nt << "\t";
     }
-    // También imprime no terminales adicionales que no están en el orden deseado
+
     for (const auto& nt : no_terminales) {
         if (find(goto_order.begin(), goto_order.end(), nt) == goto_order.end())
             cout << nt << "\t";
@@ -340,5 +336,5 @@ int main() {
         }
         cout << endl;
     }
-    // --- FIN BLOQUE PARA TABLA LR(1) ---
+    return 0;
 }
