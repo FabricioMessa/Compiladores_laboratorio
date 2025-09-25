@@ -19,3 +19,7 @@ S -> ε
 S' -> S
 S -> a S b
 S -> c
+
+S' -> S
+S -> S baa
+S -> baa
