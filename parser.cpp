@@ -24,6 +24,10 @@ struct Item {
     }
 };
 
+vector<set<Item>> kernels;
+vector<set<Item>> closures;
+map<set<Item>, int> estado_id;
+
 set<string> first(const string& symbol, const vector<produccion>& producciones, const set<string>& noTerminales, map<string, set<string>>& memo) {
     if (memo.count(symbol)) {
         return memo[symbol];
@@ -153,6 +157,69 @@ set<Item> goto_fn(const set<Item>& I, const string& X, const vector<produccion>&
     return closure(J, producciones, noTerminales, memo);
 }
 
+bool parse_string(const vector<string>& input, const vector<produccion>& producciones, const map<int, map<string, string>>& action, const map<int, map<string, int>>& goto_table) {
+    vector<int> state_stack;
+    vector<string> symbol_stack;
+
+    state_stack.push_back(0);    // Estado inicial
+    symbol_stack.push_back("$"); // Símbolo $
+
+    size_t pos = 0;
+    string word = (pos < input.size()) ? input[pos] : "$";
+
+    while (true) {
+        int state = state_stack.back();
+
+        // Busca la acción para el estado y el símbolo actual
+        auto it = action.find(state);
+        if (it == action.end() || it->second.find(word) == it->second.end()) {
+            cout << "Cadena rechazada (no hay acción para estado " << state << " y símbolo '" << word << "')." << endl;
+            return false;
+        }
+
+        string act = it->second.at(word);
+
+        if (act[0] == 'r') { // reduce
+            int prod_idx = stoi(act.substr(1));
+            const produccion& prod = producciones[prod_idx];
+            int rhs_size = prod.right.size();
+
+            // Pop 2 × |β| elementos (símbolos y estados alternados)
+            for (int i = 0; i < rhs_size; ++i) {
+                symbol_stack.pop_back();
+                state_stack.pop_back();
+            }
+
+            int top_state = state_stack.back();
+            symbol_stack.push_back(prod.left);
+
+            // Empuja el estado según la tabla GOTO
+            if (goto_table.at(top_state).find(prod.left) == goto_table.at(top_state).end()) {
+                cout << "Cadena rechazada (no hay goto para estado " << top_state << " y símbolo '" << prod.left << "')." << endl;
+                return false;
+            }
+            int next_state = goto_table.at(top_state).at(prod.left);
+            state_stack.push_back(next_state);
+        }
+        else if (act[0] == 's') { // shift
+            int next_state = stoi(act.substr(1));
+            symbol_stack.push_back(word);
+            state_stack.push_back(next_state);
+
+            ++pos;
+            word = (pos < input.size()) ? input[pos] : "$";
+        }
+        else if (act == "acc") {
+            cout << "Cadena aceptada." << endl;
+            return true;
+        }
+        else {
+            cout << "Cadena rechazada (acción inválida: " << act << ")." << endl;
+            return false;
+        }
+    }
+}
+
 int main() {
     vector<produccion> producciones;
 
@@ -256,6 +323,77 @@ int main() {
     set<Item> closure0 = closure(I0, producciones, noTerminales, memo);
     estados.push_back(closure0);
     estado_id[closure0] = 0;
+    kernels.push_back(I0);
+    closures.push_back(closure0);
+    
+    for (size_t idx = 0; idx < estados.size(); ++idx) {
+        set<Item> I = estados[idx];
+        set<string> simbolos;
+        for (const auto& prod : producciones) {
+            for (const auto& s : prod.right) simbolos.insert(s);
+        }
+        simbolos.insert("$");
+        simbolos.erase("ε");
+
+        for (const auto& X : simbolos) {
+            set<Item> goto_I_X_kernel;
+            for (const auto& item : I) {
+                const produccion& prod = producciones[item.idx];
+                if (prod.right.empty()) continue;
+                if (item.dot_pos < prod.right.size() && prod.right[item.dot_pos] == X) {
+                    goto_I_X_kernel.insert({item.idx, item.dot_pos + 1, item.lookahead});
+                }
+            }
+            if (!goto_I_X_kernel.empty()) {
+                set<Item> goto_I_X = closure(goto_I_X_kernel, producciones, noTerminales, memo);
+                if (!estado_id.count(goto_I_X)) {
+                    int nuevo_id = estados.size();
+                    estados.push_back(goto_I_X);
+                    estado_id[goto_I_X] = nuevo_id;
+                    kernels.push_back(goto_I_X_kernel);
+                    closures.push_back(goto_I_X);
+                }
+            }
+        }
+    }
+
+    // Imprimir la tabla de closure
+    cout << "\nLR(1) CLOSURE TABLE:\n";
+    cout << "State\tKernel\t\tClosure\n";
+    for (size_t i = 0; i < kernels.size(); ++i) {
+        cout << i << "\t{";
+        // Imprime kernel
+        bool first = true;
+        for (const auto& item : kernels[i]) {
+            if (!first) cout << ", ";
+            const produccion& prod = producciones[item.idx];
+            cout << "[";
+            cout << prod.left << " → ";
+            for (int k = 0; k < prod.right.size(); ++k) {
+                if (k == item.dot_pos) cout << ". ";
+                cout << prod.right[k] << " ";
+            }
+            if (item.dot_pos == prod.right.size()) cout << ". ";
+            cout << ", " << item.lookahead << "]";
+            first = false;
+        }
+        cout << "}\t{";
+        first = true;
+        for (const auto& item : closures[i]) {
+            if (!first) cout << ", ";
+            const produccion& prod = producciones[item.idx];
+            cout << "[";
+            cout << prod.left << " → ";
+            for (int k = 0; k < prod.right.size(); ++k) {
+                if (k == item.dot_pos) cout << ". ";
+                cout << prod.right[k] << " ";
+            }
+            if (item.dot_pos == prod.right.size()) cout << ". ";
+            cout << ", " << item.lookahead << "]";
+            first = false;
+        }
+        cout << "}\n";
+    }
 
     for (const auto& X : goto_order) {
         set<Item> goto0 = goto_fn(closure0, X, producciones, noTerminales, memo);
@@ -336,5 +474,18 @@ int main() {
         }
         cout << endl;
     }
+
+    cout << "\nIngrese la cadena: ";
+    string input_line;
+    getline(cin, input_line);
+    stringstream ss(input_line);
+    vector<string> input;
+    string tok;
+    while (ss >> tok) {
+        input.push_back(tok);
+    }
+
+    parse_string(input, producciones, action, goto_table);
+
     return 0;
 }
