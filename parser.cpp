@@ -24,10 +24,6 @@ struct Item {
     }
 };
 
-vector<set<Item>> kernels;
-vector<set<Item>> closures;
-map<set<Item>, int> estado_id;
-
 set<string> first(const string& symbol, const vector<produccion>& producciones, const set<string>& noTerminales, map<string, set<string>>& memo) {
     if (memo.count(symbol)) {
         return memo[symbol];
@@ -161,8 +157,8 @@ bool parse_string(const vector<string>& input, const vector<produccion>& producc
     vector<int> state_stack;
     vector<string> symbol_stack;
 
-    state_stack.push_back(0);    // Estado inicial
-    symbol_stack.push_back("$"); // Símbolo $
+    state_stack.push_back(0);   
+    symbol_stack.push_back("$");
 
     size_t pos = 0;
     string word = (pos < input.size()) ? input[pos] : "$";
@@ -170,7 +166,6 @@ bool parse_string(const vector<string>& input, const vector<produccion>& producc
     while (true) {
         int state = state_stack.back();
 
-        // Busca la acción para el estado y el símbolo actual
         auto it = action.find(state);
         if (it == action.end() || it->second.find(word) == it->second.end()) {
             cout << "Cadena rechazada (no hay acción para estado " << state << " y símbolo '" << word << "')." << endl;
@@ -179,29 +174,36 @@ bool parse_string(const vector<string>& input, const vector<produccion>& producc
 
         string act = it->second.at(word);
 
-        if (act[0] == 'r') { // reduce
+        if (act[0] == 'r') {
             int prod_idx = stoi(act.substr(1));
             const produccion& prod = producciones[prod_idx];
             int rhs_size = prod.right.size();
 
-            // Pop 2 × |β| elementos (símbolos y estados alternados)
+            if (state_stack.size() < rhs_size || symbol_stack.size() < rhs_size) {
+                cout << "Error: pila demasiado pequeña para reducir (estado/símbolo)." << endl;
+                return false;
+            }
             for (int i = 0; i < rhs_size; ++i) {
                 symbol_stack.pop_back();
                 state_stack.pop_back();
             }
 
+            if (state_stack.empty()) {
+                cout << "Error: pila de estados vacía después de reducir." << endl;
+                return false;
+            }
             int top_state = state_stack.back();
             symbol_stack.push_back(prod.left);
 
-            // Empuja el estado según la tabla GOTO
-            if (goto_table.at(top_state).find(prod.left) == goto_table.at(top_state).end()) {
+            if (goto_table.find(top_state) == goto_table.end() ||
+                goto_table.at(top_state).find(prod.left) == goto_table.at(top_state).end()) {
                 cout << "Cadena rechazada (no hay goto para estado " << top_state << " y símbolo '" << prod.left << "')." << endl;
                 return false;
             }
             int next_state = goto_table.at(top_state).at(prod.left);
             state_stack.push_back(next_state);
         }
-        else if (act[0] == 's') { // shift
+        else if (act[0] == 's') { 
             int next_state = stoi(act.substr(1));
             symbol_stack.push_back(word);
             state_stack.push_back(next_state);
@@ -276,8 +278,8 @@ int main() {
 
     all_symbols.erase("ε");
 
-    vector<string> term_order = {"c", "d", "$", "(", ")", "a", "b", "id"}; 
-    vector<string> goto_order = {"S'", "S", "C", "E", "T", "F"};
+    vector<string> term_order = {"(", ")", "create", "paper", "$", "in_lv", "int", "comma", "out_lv", "assign", "nom", "identifier", "string", "float", "boolv", "boolf", "int_value", "string_value", "float_value", "boolv", "boolf", "in_op", "out_op", "then", "else", "while", "from", "to", "calculate", "in", "sqrt", "qbic", "similar", "less_than", "greater_than", "less_equal", "greater_equal", "not_equal", "increment", "decrement", "plus", "minus", "multi", "division", "power"}; 
+    vector<string> goto_order = {"S'", "P", "SL", "S", "CC", "D", "T", "V", "BO", "OP", "IF", "W", "F", "C", "R", "SQ", "QB", "A", "CN", "CM", "ID", "E", "EP", "TRM", "TP", "FC"};
 
     vector<string> terminales;
     for (const auto& t : term_order) {
@@ -323,77 +325,6 @@ int main() {
     set<Item> closure0 = closure(I0, producciones, noTerminales, memo);
     estados.push_back(closure0);
     estado_id[closure0] = 0;
-    kernels.push_back(I0);
-    closures.push_back(closure0);
-    
-    for (size_t idx = 0; idx < estados.size(); ++idx) {
-        set<Item> I = estados[idx];
-        set<string> simbolos;
-        for (const auto& prod : producciones) {
-            for (const auto& s : prod.right) simbolos.insert(s);
-        }
-        simbolos.insert("$");
-        simbolos.erase("ε");
-
-        for (const auto& X : simbolos) {
-            set<Item> goto_I_X_kernel;
-            for (const auto& item : I) {
-                const produccion& prod = producciones[item.idx];
-                if (prod.right.empty()) continue;
-                if (item.dot_pos < prod.right.size() && prod.right[item.dot_pos] == X) {
-                    goto_I_X_kernel.insert({item.idx, item.dot_pos + 1, item.lookahead});
-                }
-            }
-            if (!goto_I_X_kernel.empty()) {
-                set<Item> goto_I_X = closure(goto_I_X_kernel, producciones, noTerminales, memo);
-                if (!estado_id.count(goto_I_X)) {
-                    int nuevo_id = estados.size();
-                    estados.push_back(goto_I_X);
-                    estado_id[goto_I_X] = nuevo_id;
-                    kernels.push_back(goto_I_X_kernel);
-                    closures.push_back(goto_I_X);
-                }
-            }
-        }
-    }
-
-    // Imprimir la tabla de closure
-    cout << "\nLR(1) CLOSURE TABLE:\n";
-    cout << "State\tKernel\t\tClosure\n";
-    for (size_t i = 0; i < kernels.size(); ++i) {
-        cout << i << "\t{";
-        // Imprime kernel
-        bool first = true;
-        for (const auto& item : kernels[i]) {
-            if (!first) cout << ", ";
-            const produccion& prod = producciones[item.idx];
-            cout << "[";
-            cout << prod.left << " → ";
-            for (int k = 0; k < prod.right.size(); ++k) {
-                if (k == item.dot_pos) cout << ". ";
-                cout << prod.right[k] << " ";
-            }
-            if (item.dot_pos == prod.right.size()) cout << ". ";
-            cout << ", " << item.lookahead << "]";
-            first = false;
-        }
-        cout << "}\t{";
-        first = true;
-        for (const auto& item : closures[i]) {
-            if (!first) cout << ", ";
-            const produccion& prod = producciones[item.idx];
-            cout << "[";
-            cout << prod.left << " → ";
-            for (int k = 0; k < prod.right.size(); ++k) {
-                if (k == item.dot_pos) cout << ". ";
-                cout << prod.right[k] << " ";
-            }
-            if (item.dot_pos == prod.right.size()) cout << ". ";
-            cout << ", " << item.lookahead << "]";
-            first = false;
-        }
-        cout << "}\n";
-    }
 
     for (const auto& X : goto_order) {
         set<Item> goto0 = goto_fn(closure0, X, producciones, noTerminales, memo);

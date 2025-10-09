@@ -1,4 +1,4 @@
-E' -> E
+S' -> E
 E -> E + T
 E -> T
 T -> T * F
@@ -27,3 +27,61 @@ S -> baa
 S' -> S
 S -> ( S )
 S -> a
+
+P -> create paper in_lv int comma int out_lv SL 
+SL -> S SL  
+SL -> e
+S -> paper in_lv int comma int out_lv CC 
+CC -> D 
+CC -> BO 
+D -> T assing V nom identifier
+T -> int
+T -> string 
+T -> float
+T -> boolv
+T -> boolf 
+V -> int_value
+V -> string_value
+V -> float_value
+V -> boolv
+V -> boolf 
+BO -> in_op OP out_op
+OP -> IF OP
+OP -> W OP
+OP -> F OP
+OP -> C OP
+OP -> SQ OP
+OP -> QB OP
+OP -> A OP
+OP -> R
+OP -> e 
+IF -> IF CN then SL else SL 
+W -> while CN then SL 
+F -> from E to E then E ID 
+C -> calculate E in identifier 
+R -> return E 
+SQ -> sqrt identifier 
+QB -> qbic identifier 
+A -> identifier assign E 
+CN -> E CM E 
+CM -> similar
+CM -> less_than
+CM -> greater_than
+CM -> less_equal
+CM -> greater_equal
+CM -> not_equal 
+ID -> increment
+ID -> decrement 
+E -> TRM EP 
+EP -> plus TRM EP
+EP -> minus TRM EP
+EP -> e 
+TRM -> FC TP 
+TP -> multi FC TP
+TP -> division FC TP
+TP -> power FC TP
+TP -> e 
+FC -> in_lv E out_lv
+FC -> identifier
+FC -> int_value
+FC -> float_value
