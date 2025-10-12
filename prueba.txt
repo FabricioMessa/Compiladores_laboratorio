@@ -8,8 +8,8 @@ paper[2, 1] {if numero < numero2 then llave = FALSE, else llave2 = TRUE}
 paper[2, 2] int = 0 -> contador
 paper[2, 3] int = 0 -> contador2
 paper[2, 4] {from numero to 10 then contador++}
-paper[2, 5] {while llave is TRUE then contador - numero + numero2 | numero++, numero2++, {if contador > 30 then llave = FALSE} | return contador}
+paper[2, 5] {while llave is TRUE then contador - numero + numero2 , numero++, numero2++, {if contador > 30 then llave = FALSE} , return contador}
 paper[3, 1] int = 0 -> operacion
-paper[3, 2] {calculate numero + numero2 - contador * contador2 in operacion | return operacion}
+paper[3, 2] {calculate numero + numero2 - contador * contador2 in operacion , return operacion}
 paper[3, 3] int = 0 -> raicita
 paper[3, 4] {sqrt raicita}

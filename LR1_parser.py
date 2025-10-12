@@ -190,7 +190,7 @@ def main():
     all_symbols.discard("ε")
 
     # --- Para esta gramática, fija el orden y limpia duplicados ---
-    terminales = ["c", "d", "$"]
+    terminales = ["c", "d", "$", "a", "(", ")"]
     goto_order = ["S'", "S", "C"]
     no_terminales = [nt for nt in goto_order if nt in noTerminales]
 

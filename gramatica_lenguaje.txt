@@ -1,0 +1,73 @@
+programa' -> programa
+
+programa -> instruccion
+programa -> programa instruccion
+
+instruccion -> crear_lienzo
+instruccion -> asignacion
+instruccion -> bloque_en_celda
+
+crear_lienzo -> CREATE PAPER IN_LV INT POSITION INT OUT_LV
+
+asignacion -> PAPER IN_LV INT POSITION INT OUT_LV tipo ASSIGN valor NOM IDENTIFIER
+
+bloque_en_celda -> PAPER IN_LV INT POSITION INT OUT_LV IN_OP logica_bloque OUT_OP
+
+logica_bloque -> sentencia_if
+logica_bloque -> sentencia_from
+logica_bloque -> sentencia_while
+logica_bloque -> sentencia_calculate
+logica_bloque -> sentencia_sqrt
+
+sentencia_if -> IF expresion THEN asignacion_simple
+sentencia_if -> IF expresion THEN asignacion_simple POSITION ELSE asignacion_simple
+
+sentencia_from -> FROM IDENTIFIER TO valor_simple THEN accion_simple
+
+sentencia_while -> WHILE condicion_while THEN lista_acciones
+
+sentencia_calculate -> CALCULATE expresion_aritmetica IN IDENTIFIER POSITION sentencia_return
+
+sentencia_sqrt -> SQRT IDENTIFIER
+
+sentencia_return -> RETURN IDENTIFIER
+
+lista_acciones -> accion_simple
+lista_acciones -> lista_acciones SEPARATOR accion_simple
+lista_acciones -> lista_acciones POSITION accion_simple
+
+accion_simple -> expresion_aritmetica
+accion_simple -> IDENTIFIER INCREMENT
+accion_simple -> sentencia_return
+accion_simple -> IN_OP sentencia_if OUT_OP
+
+condicion_while -> IDENTIFIER IS IDENTIFIER
+
+expresion_aritmetica -> valor_simple
+expresion_aritmetica -> expresion_aritmetica op_aritmetico valor_simple
+
+op_aritmetico -> PLUS
+op_aritmetico -> MINUS
+op_aritmetico -> MULTI
+op_aritmetico -> DIVISION
+
+valor_simple -> IDENTIFIER
+valor_simple -> INT
+
+expresion -> IDENTIFIER op_relacional valor_simple
+
+op_relacional -> LESS_THAN
+op_relacional -> GREATER_THAN
+
+asignacion_simple -> IDENTIFIER ASSIGN IDENTIFIER
+
+tipo -> INT
+tipo -> STRING
+tipo -> BOOLV
+tipo -> BOOLF
+tipo -> FLOAT
+
+valor -> INT
+valor -> FLOAT
+valor -> IDENTIFIER
+valor -> STRING_LITERAL
