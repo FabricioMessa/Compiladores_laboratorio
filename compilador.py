@@ -2,10 +2,6 @@ import sys
 import csv
 from enum import Enum, auto
 
-# ======================================================================
-# PARTE 1: CÓDIGO DEL SCANNER (lo que hicimos en el paso anterior)
-# ======================================================================
-
 class TokenType(Enum):
     IDENTIFIER = auto()
     INT = auto()
@@ -69,7 +65,26 @@ class Scanner:
         self.current_char = ''
         self.line = 1
         self.column = 0
-        self.keywords = { "int": TokenType.INT, "string": TokenType.STRING, "float": TokenType.FLOAT, "boolv": TokenType.BOOLV, "boolf": TokenType.BOOLF, "create": TokenType.CREATE, "paper": TokenType.PAPER, "if": TokenType.IF, "else": TokenType.ELSE, "then": TokenType.THEN, "from": TokenType.FROM, "to": TokenType.TO, "while": TokenType.WHILE, "is": TokenType.IS, "return": TokenType.RETURN, "in": TokenType.IN, "calculate": TokenType.CALCULATE, "sqrt": TokenType.SQRT, "qbic": TokenType.QBIC }
+        self.keywords = { "int": TokenType.INT, 
+                        "string": TokenType.STRING, 
+                        "float": TokenType.FLOAT, 
+                        "boolv": TokenType.BOOLV, 
+                        "boolf": TokenType.BOOLF, 
+                        "create": TokenType.CREATE, 
+                        "paper": TokenType.PAPER, 
+                        "if": TokenType.IF, 
+                        "else": TokenType.ELSE, 
+                        "then": TokenType.THEN, 
+                        "from": TokenType.FROM,
+                        "to": TokenType.TO, 
+                        "while": TokenType.WHILE, 
+                        "is": TokenType.IS, 
+                        "return": TokenType.RETURN, 
+                        "in": TokenType.IN, 
+                        "calculate": TokenType.CALCULATE, 
+                        "sqrt": TokenType.SQRT, 
+                        "qbic": TokenType.QBIC 
+                    }
         self.advance()
 
     def advance(self):
@@ -90,28 +105,29 @@ class Scanner:
             value += self.current_char
             self.advance()
         token_type = self.keywords.get(value.lower(), TokenType.IDENTIFIER)
-        # Ajuste: Si el tipo es INT, FLOAT, etc., pero es un identificador, lo tratamos como tal.
+
         if token_type in [TokenType.INT, TokenType.STRING, TokenType.FLOAT, TokenType.BOOLV, TokenType.BOOLF] and self.peek() not in ['=', ' ']:
              return Token(TokenType.IDENTIFIER, value, self.line, start_col)
         return Token(token_type, value, self.line, start_col)
 
     def get_number(self):
-        value, start_col, is_float = '', self.column, False
+        value = ''
+        start_col = self.column
+        is_float = False
         while self.current_char is not None and (self.current_char.isdigit() or self.current_char == '.'):
-            if self.current_char == '.': is_float = True
+            if self.current_char == '.': 
+                is_float = True
             value += self.current_char; self.advance()
         return Token(TokenType.FLOAT if is_float else TokenType.INT, value, self.line, start_col)
-
-    # Reemplaza la función entera en compilador.py
+    
     def get_next_token(self):
         while self.current_char is not None:
             if self.current_char.isspace():
                 self.advance()
                 continue
 
-            # --- NUEVA LÓGICA PARA STRINGS ---
             if self.current_char == '"':
-                self.advance() # Consumir la comilla inicial
+                self.advance()
                 value = ''
                 start_col = self.column
                 
@@ -120,13 +136,11 @@ class Scanner:
                     self.advance()
                 
                 if self.current_char == '"':
-                    self.advance() # Consumir la comilla final
+                    self.advance()
                     return Token(TokenType.STRING_LITERAL, value, self.line, start_col)
                 else:
-                    # Si llega al final del archivo sin cerrar comillas
                     print(f"Error: Cadena de texto no cerrada en {self.line}:{start_col}")
                     return Token(TokenType.UNKNOWN, value, self.line, start_col)
-            # --- FIN DE LA NUEVA LÓGICA ---
 
             if self.current_char.isalpha() or self.current_char == '_':
                 return self.get_identifier_or_keyword()
@@ -135,16 +149,43 @@ class Scanner:
                 return self.get_number()
             
             char, start_col = self.current_char, self.column
-            # Operadores de dos caracteres
-            if char == '=' and self.peek() == '=': self.advance(); self.advance(); return Token(TokenType.SIMILAR, '==', self.line, start_col)
-            if char == '>' and self.peek() == '=': self.advance(); self.advance(); return Token(TokenType.GREATER_EQUAL, '>=', self.line, start_col)
-            if char == '<' and self.peek() == '=': self.advance(); self.advance(); return Token(TokenType.LESS_EQUAL, '<=', self.line, start_col)
-            if char == '!' and self.peek() == '=': self.advance(); self.advance(); return Token(TokenType.NOT_EQUAL, '!=', self.line, start_col)
-            if char == '-' and self.peek() == '>': self.advance(); self.advance(); return Token(TokenType.NOM, '->', self.line, start_col)
-            if char == '+' and self.peek() == '+': self.advance(); self.advance(); return Token(TokenType.INCREMENT, '++', self.line, start_col)
-            if char == '-' and self.peek() == '-': self.advance(); self.advance(); return Token(TokenType.DECREMENT, '--', self.line, start_col)
+        
+            if char == '=' and self.peek() == '=': 
+                self.advance() 
+                self.advance()
+                return Token(TokenType.SIMILAR, '==', self.line, start_col)
+            
+            if char == '>' and self.peek() == '=': 
+                self.advance() 
+                self.advance() 
+                return Token(TokenType.GREATER_EQUAL, '>=', self.line, start_col)
+            
+            if char == '<' and self.peek() == '=': 
+                self.advance() 
+                self.advance()
+                return Token(TokenType.LESS_EQUAL, '<=', self.line, start_col)
+            
+            if char == '!' and self.peek() == '=': 
+                self.advance()
+                self.advance()
+                return Token(TokenType.NOT_EQUAL, '!=', self.line, start_col)
+            
+            if char == '-' and self.peek() == '>': 
+                self.advance()
+                self.advance()
+                return Token(TokenType.NOM, '->', self.line, start_col)
+            
+            if char == '+' and self.peek() == '+': 
+                self.advance()
+                self.advance()
+                return Token(TokenType.INCREMENT, '++', self.line, start_col)
+            
+            if char == '-' and self.peek() == '-': 
+                self.advance()
+                self.advance()
+                return Token(TokenType.DECREMENT, '--', self.line, start_col)
 
-            # Operadores de un caracter (ya no incluye QUOTE)
+
             single_char_map = { 
                 '=': TokenType.ASSIGN, 
                 '>': TokenType.GREATER_THAN, 
@@ -169,44 +210,81 @@ class Scanner:
         return Token(TokenType.END_OF_FILE, '', self.line, self.column)
 
 class Produccion:
-    def __init__(self, left, right): self.left, self.right = left, tuple(right)
-    def __eq__(self, other): return isinstance(other, Produccion) and self.left == other.left and self.right == other.right
-    def __hash__(self): return hash((self.left, self.right))
-    def __repr__(self): return f"{self.left} -> {' '.join(self.right) if self.right else 'ε'}"
+    def __init__(self, left, right): 
+        self.left = left
+        self.right = tuple(right)
+
+    def __eq__(self, other): 
+        return isinstance(other, Produccion) and self.left == other.left and self.right == other.right
+    
+    def __hash__(self): 
+        return hash((self.left, self.right))
+    
+    def __repr__(self): 
+        return f"{self.left} -> {' '.join(self.right) if self.right else 'ε'}"
 
 class Item:
-    def __init__(self, idx, dot_pos, lookahead): self.idx, self.dot_pos, self.lookahead = idx, dot_pos, lookahead
-    def __eq__(self, other): return (self.idx, self.dot_pos, self.lookahead) == (other.idx, other.dot_pos, other.lookahead)
-    def __hash__(self): return hash((self.idx, self.dot_pos, self.lookahead))
-    def __repr__(self): return f"Item(idx={self.idx}, dot_pos={self.dot_pos}, lookahead='{self.lookahead}')"
+    def __init__(self, idx, dot_pos, lookahead): 
+        self.idx = idx
+        self.dot_pos = dot_pos
+        self.lookahead = lookahead
+
+    def __eq__(self, other): 
+        return (self.idx, self.dot_pos, self.lookahead) == (other.idx, other.dot_pos, other.lookahead)
+    
+    def __hash__(self): 
+        return hash((self.idx, self.dot_pos, self.lookahead))
+    
+    def __repr__(self): 
+        return f"Item(idx={self.idx}, dot_pos={self.dot_pos}, lookahead='{self.lookahead}')"
 
 def first(symbol, producciones, no_terminales, memo):
-    if symbol in memo: return memo[symbol]
-    if symbol not in no_terminales: return {symbol}
+    if symbol in memo: 
+        return memo[symbol]
+    
+    if symbol not in no_terminales: 
+        return {symbol}
+    
     result = set()
     for p in producciones:
         if p.left == symbol:
-            if not p.right: result.add('ε'); continue
+            if not p.right: 
+                result.add('ε')
+                continue
+
             all_nullable = True
             for sym in p.right:
                 sym_first = first(sym, producciones, no_terminales, memo)
                 result.update(s for s in sym_first if s != 'ε')
-                if 'ε' not in sym_first: all_nullable = False; break
-            if all_nullable: result.add('ε')
+                if 'ε' not in sym_first: 
+                    all_nullable = False
+                    break
+
+            if all_nullable: 
+                result.add('ε')
+
     memo[symbol] = result
     return result
 
 def first_sequence(seq, producciones, no_terminales, memo):
-    result, all_nullable = set(), True
+    result = set()
+    all_nullable = True
+
     for sym in seq:
         f = first(sym, producciones, no_terminales, memo)
         result.update(s for s in f if s != 'ε')
-        if 'ε' not in f: all_nullable = False; break
-    if all_nullable: result.add('ε')
+        if 'ε' not in f: 
+            all_nullable = False
+            break
+
+    if all_nullable: 
+        result.add('ε')
+
     return result
 
 def closure(I, producciones, no_terminales, memo):
     C = set(I)
+
     while True:
         to_add = set()
         for item in C:
@@ -220,8 +298,12 @@ def closure(I, producciones, no_terminales, memo):
                         if p.left == B:
                             for b in lookaheads:
                                 new_item = Item(j, 0, b)
-                                if new_item not in C: to_add.add(new_item)
-        if not to_add: break
+                                if new_item not in C: 
+                                    to_add.add(new_item)
+
+        if not to_add: 
+            break
+
         C.update(to_add)
     return C
 
@@ -234,45 +316,60 @@ def goto_fn(I, X, producciones, no_terminales, memo):
     return closure(J, producciones, no_terminales, memo)
 
 def parse_string(input_tokens, producciones, action, goto_table):
-    state_stack, symbol_stack, pos = [0], ["$"], 0
+    state_stack = [0]
+    symbol_stack = ["$"]
+    pos = 0
     word = input_tokens[pos] if pos < len(input_tokens) else "$"
     print("\n--- INICIO DEL PARSEO ---")
+    
     while True:
         state = state_stack[-1]
         print(f"Pila de Estados: {state_stack}, Pila de Símbolos: {symbol_stack}, Token Actual: {word}")
-        if state not in action or word not in action[state]: print(f"Error: Cadena rechazada. No hay acción para estado {state} y símbolo '{word}'."); return False
+        
+        if state not in action or word not in action[state]: 
+            print(f"Error: Cadena rechazada. No hay acción para estado {state} y símbolo '{word}'.")
+            return False
+        
         act = action[state][word]
         if act.startswith("s"):
             next_state = int(act[1:])
             symbol_stack.append(word); state_stack.append(next_state)
             pos += 1; word = input_tokens[pos] if pos < len(input_tokens) else "$"
+        
         elif act.startswith("r"):
             prod_idx = int(act[1:])
             prod = producciones[prod_idx]
             print(f"Reduciendo por la regla: {prod}")
-            for _ in prod.right: symbol_stack.pop(); state_stack.pop()
+            for _ in prod.right: 
+                symbol_stack.pop()
+                state_stack.pop()
+            
             top_state = state_stack[-1]
             symbol_stack.append(prod.left)
-            if top_state not in goto_table or prod.left not in goto_table[top_state]: print(f"Error: Cadena rechazada. No hay goto para estado {top_state} y símbolo '{prod.left}'."); return False
+
+            if top_state not in goto_table or prod.left not in goto_table[top_state]: 
+                print(f"Error: Cadena rechazada. No hay goto para estado {top_state} y símbolo '{prod.left}'.")
+                return False
+            
             next_state = goto_table[top_state][prod.left]
             state_stack.append(next_state)
-        elif act == "acc": print("\n--- FIN DEL PARSEO: CADENA ACEPTADA ---\n"); return True
-        else: print(f"Error: Cadena rechazada. Acción inválida: {act}."); return False
 
-# Reemplaza esta función en compilador.py
+        elif act == "acc": 
+            print("\n--- CADENA ACEPTADA ---\n")
+            return True
+
+        else: 
+            print(f"Error: Cadena rechazada. Acción inválida: {act}.")
+            return False
+
 def read_grammar(filename):
     producciones = []
     with open(filename, "r", encoding="utf-8") as infile:
         for line in infile:
-            # --- LÓGICA MEJORADA ---
-            # 1. Quita cualquier comentario que empiece con #
             line = line.split('#', 1)[0]
-            # 2. Quita espacios en blanco de los extremos
             line = line.strip()
-            # 3. Si la línea está vacía, la ignora
             if not line:
                 continue
-            # --- FIN DE LA MEJORA ---
             
             left, right_side = map(str.strip, line.split("->"))
             right = right_side.split() if right_side != "ε" else []
@@ -281,30 +378,34 @@ def read_grammar(filename):
 
 def main():
     grammar_file = "gramatica_lenguaje.txt"
-    input_file = input("Ingrese la ruta del archivo de código fuente (ej: prueba.txt): ")
+    input_file = input("Ingrese nombre del archivo: ")
 
     producciones = read_grammar(grammar_file)
 
-    # --- LA LÍNEA CRÍTICA CORREGIDA ---
     start_symbol_augmented = producciones[0].left
     
     no_terminales = sorted(list(set(p.left for p in producciones)))
     todos_simbolos = set(no_terminales) | set(s for p in producciones for s in p.right)
     terminales = sorted(list(todos_simbolos - set(no_terminales)))
     
-    if '$' not in terminales: terminales.append('$')
+    if '$' not in terminales: 
+        terminales.append('$')
 
-    print("\nPRODUCCIONES:")
-    for i, prod in enumerate(producciones): print(f"{i}: {prod}")
-    print(f"\nTERMINALES: {terminales}")
-    print(f"\nNO TERMINALES: {no_terminales}")
+    #print("\nPRODUCCIONES:")
+    #for i, prod in enumerate(producciones): 
+        #print(f"{i}: {prod}")
+
+    #print(f"\nTERMINALES: {terminales}")
+    #print(f"\nNO TERMINALES: {no_terminales}")
 
     memo_first = {}
     I0 = {Item(0, 0, "$")}
     C0 = closure(I0, producciones, no_terminales, memo_first)
     
-    estados, estado_id = [C0], {frozenset(C0): 0}
-    action, goto_table = {}, {}
+    estados = [C0]
+    estado_id = {frozenset(C0): 0}
+    action = {}
+    goto_table = {}
     worklist = [0]
 
     while worklist:
@@ -329,7 +430,8 @@ def main():
             if item.dot_pos == len(producciones[item.idx].right):
                 prod = producciones[item.idx]
                 if prod.left == start_symbol_augmented: 
-                    if item.lookahead == '$': action.setdefault(i, {})['$'] = "acc"
+                    if item.lookahead == '$': 
+                        action.setdefault(i, {})['$'] = "acc"
                 else:
                     action.setdefault(i, {})[item.lookahead] = f"r{item.idx}"
 
@@ -339,10 +441,13 @@ def main():
         writer.writerow(header)
         for i, I in enumerate(estados):
             row = [i]
-            for t in terminales: row.append(action.get(i, {}).get(t, ""))
-            for nt in no_terminales: row.append(goto_table.get(i, {}).get(nt, ""))
+            for t in terminales: 
+                row.append(action.get(i, {}).get(t, ""))
+            
+            for nt in no_terminales: 
+                row.append(goto_table.get(i, {}).get(nt, ""))
             writer.writerow(row)
-    print("\nTabla LR(1) generada y exportada a LR1_table.csv")
+    #print("\nTabla LR(1) generada y exportada a LR1_table.csv")
 
     try:
         with open(input_file, 'r') as file:
@@ -353,7 +458,7 @@ def main():
         
     scanner = Scanner(source_code)
     input_tokens = []
-    print("\n--- TOKENS GENERADOS POR EL SCANNER ---")
+    print("\nTOKENS GENERADOS POR EL SCANNER")
     while True:
         token = scanner.get_next_token()
         print(token)
